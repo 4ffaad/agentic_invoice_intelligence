@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ABI Finance Portal Design System - Professional purple/blue palette
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base colors from palette */
+    --background: 240 8% 97%;
+    --foreground: 255 15% 7%;
+
+    /* Card system */
+    --card: 0 0% 100%;
+    --card-foreground: 255 15% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 255 15% 7%;
+
+    /* Primary - Modern teal-blue gradient */
+    --primary: 197 71% 52%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 197 71% 65%;
+
+    /* Secondary - Warm purple */
+    --secondary: 270 50% 85%;
+    --secondary-foreground: 270 15% 15%;
+
+    /* Muted tones - Warmer grays */  
+    --muted: 210 15% 96%;
+    --muted-foreground: 210 10% 50%;
+
+    /* Accent - Deep purple */
+    --accent: 270 60% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Interface elements */
+    --border: 210 15% 90%;
+    --input: 210 15% 94%;
+    --ring: 197 71% 52%;
+
+    /* Dark accent from palette */
+    --dark-accent: 270 60% 45%;
+    --surface-accent: 210 20% 25%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    --gradient-surface: linear-gradient(180deg, hsl(var(--background)), hsl(210 15% 94%));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--dark-accent)));
+
+    /* Shadows and effects */
+    --shadow-elegant: 0 4px 20px -2px hsl(var(--primary) / 0.1);
+    --shadow-card: 0 2px 8px -2px hsl(255 15% 7% / 0.08);
+    --shadow-glow: 0 0 30px hsl(var(--primary-glow) / 0.3);
+
+    /* Transitions and effects */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 210 15% 96%;
+    --sidebar-foreground: 210 15% 25%;
+    --sidebar-primary: 197 71% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 92%;
+    --sidebar-accent-foreground: 210 15% 15%;
+    --sidebar-border: 210 15% 88%;
+    --sidebar-ring: 197 71% 52%;
+  }
+
+  .dark {
+    --background: 255 15% 7%;
+    --foreground: 240 8% 95%;
+
+    --card: 255 15% 9%;
+    --card-foreground: 240 8% 95%;
+
+    --popover: 255 15% 9%;
+    --popover-foreground: 240 8% 95%;
+
+    --primary: 197 71% 60%;
+    --primary-foreground: 255 15% 7%;
+    --primary-glow: 197 71% 70%;
+
+    --secondary: 255 15% 15%;
+    --secondary-foreground: 240 8% 85%;
+
+    --muted: 255 15% 12%;
+    --muted-foreground: 240 8% 60%;
+
+    --accent: 270 60% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 255 15% 15%;
+    --input: 255 15% 15%;
+    --ring: 197 71% 60%;
+
+    --dark-accent: 270 60% 40%;
+    --surface-accent: 255 15% 12%;
+
+    --sidebar-background: 255 15% 8%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 197 71% 60%;
+    --sidebar-primary-foreground: 255 15% 7%;
+    --sidebar-accent: 255 15% 12%;
+    --sidebar-accent-foreground: 210 15% 85%;
+    --sidebar-border: 255 15% 15%;
+    --sidebar-ring: 197 71% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
