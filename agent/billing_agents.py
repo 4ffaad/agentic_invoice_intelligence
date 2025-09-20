@@ -11,7 +11,7 @@ from invoice_tools import (
 
 # Create Bedrock model
 bedrock_model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+    model_id="us.amazon.nova-lite-v1:0",
     temperature=0.3
 )
 
@@ -71,19 +71,19 @@ billing_agent = Agent(
 if __name__ == "__main__":
     print("Testing Billing Agent with Your Lambda Functions\n")
     
-    # Test 1: Check current overdue situation
-    print("=" * 60)
-    print("TEST 1: Overdue Invoice Analysis")
-    print("=" * 60)
-    response1 = billing_agent("Please analyze all overdue invoices and tell me what actions we should take for each.")
-    print(f"Agent: {response1}\n")
+    # # Test 1: Check current overdue situation
+    # print("=" * 60)
+    # print("TEST 1: Overdue Invoice Analysis")
+    # print("=" * 60)
+    # response1 = billing_agent("Please analyze all overdue invoices and tell me what actions we should take for each.")
+    # print(f"Agent: {response1}\n")
     
-    # # Test 2: Customer-specific analysis
-    # print("=" * 60)
-    # print("TEST 2: Customer Payment Analysis")
-    # print("=" * 60)
-    # response2 = billing_agent("Check the payment history for customer CUST-123 and assess their risk level.")
-    # print(f"Agent: {response2}\n")
+    # Test 2: Customer-specific analysis
+    print("=" * 60)
+    print("TEST 2: Customer Payment Analysis")
+    print("=" * 60)
+    response2 = billing_agent("Check the payment history for customer CUST-001 and assess their risk level.")
+    print(f"Agent: {response2}\n")
     
     # # Test 3: Autonomous billing management
     # print("=" * 60)
