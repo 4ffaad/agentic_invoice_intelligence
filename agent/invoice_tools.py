@@ -162,25 +162,15 @@ def get_overdue_invoices() -> dict:
         }
 
 @tool
-def update_invoice_status(invoice_id: str, new_status: str, notes: Optional[str] = None) -> dict:
-    """Update an invoice status (sent, paid) with optional notes"""
-    
-    payload = {
-        "status": new_status
-    }
-    
-    # Add email sent flag if changing to sent status
-    if new_status == "sent":
-        payload["emailSent"] = True
-    
-    if notes:
-        payload["notes"] = notes
+def update_invoice_status(invoice_id: str) -> dict:
+    """Mark an invoice as paid with automatic DynamoDB and Zoho synchronization"""
     
     try:
+        # Make PUT request to /invoices/{invoice_id} endpoint
+        # The invoice_id goes in the URL path, no body needed
         response = requests.put(
-            f"{API_BASE_URL}/invoices/{invoice_id}",
+            f"{API_BASE_URL}/invoices/{invoice_id}",  # invoice_id in path
             headers={"Content-Type": "application/json"},
-            json=payload,
             timeout=30
         )
         
@@ -189,19 +179,23 @@ def update_invoice_status(invoice_id: str, new_status: str, notes: Optional[str]
             return {
                 "success": True,
                 "invoice_id": invoice_id,
-                "new_status": new_status,
-                "updated_invoice": result["invoice"]
+                "status": "paid",
+                "message": result.get("message", f"Invoice {invoice_id} marked as paid"),
+                "invoice": result.get("invoice", {}),
+                "dynamodb_updated": True,
+                "zoho_updated": True,
+                "zoho_response": result.get("zoho_response", {})
             }
         else:
             return {
                 "success": False,
-                "error": f"Failed to update invoice: {response.text}"
+                "error": f"Failed to mark invoice as paid: {response.status_code} - {response.text}"
             }
             
     except Exception as e:
         return {
             "success": False,
-            "error": f"Error updating invoice: {str(e)}"
+            "error": f"Error marking invoice as paid: {str(e)}"
         }
 
 @tool 

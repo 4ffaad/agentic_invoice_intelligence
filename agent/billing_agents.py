@@ -249,3 +249,5 @@ coordinator_agent = Agent(
 # Test scenarios
 if __name__ == "__main__":
     print("Testing Billing Agent with Your Lambda Functions\n")
+    response = invoice_agent("update the status of invoice 7273232000000105054 to 'paid'.")
+    print("Invoice Agent Response:\n", response, "\n")
