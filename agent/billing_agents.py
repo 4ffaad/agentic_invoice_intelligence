@@ -13,7 +13,7 @@ from invoice_tools import (
 
 # Create Bedrock model
 bedrock_model = BedrockModel(
-    model_id="us.amazon.nova-lite-v1:0",
+    model_id="us.amazon.nova-pro-v1:0",
     temperature=0.1
 )
 
@@ -267,31 +267,123 @@ coordinator_agent = Agent(
     tools=[call_email_agent, call_invoice_agent, call_analysis_agent, ]
 )
 
+UNIFIED_BILLING_AGENT_PROMPT = """
+You are an Intelligent Billing Automation Agent. You handle all billing operations including invoice management, customer analysis, and automated email communications.
+
+## CORE CAPABILITIES:
+- Invoice management and status updates
+- Customer payment pattern analysis
+- Automated email communications
+- Risk assessment and billing insights
+
+INVOICE STATUS DEFINITIONS:
+
+"sent": Invoice has been delivered to customer but payment is still PENDING (awaiting payment)
+"paid": Invoice has been fully paid and closed
+
+## AVAILABLE TOOLS:
+
+**get_invoice_details(invoice_id: str)**
+- Returns: Complete invoice info including customer details, amounts, due dates, overdue status
+- Use when: Need specific invoice information
+
+**list_all_invoices(status_filter: Optional[str])**
+- Returns: All invoices with optional filtering by status ("sent", "paid")
+- Includes: Summary statistics, overdue calculations for each invoice
+- Use when: Need overview of invoices or filtered lists
+
+**get_customer_invoice_history(customer_id: str)**
+- Returns: Payment history, risk analysis, payment rates for specific customer
+- Use when: Need customer behavior analysis for personalization
+
+**send_personalized_email(customer_name: str, invoice_number: str, amount: float, days_overdue: int, customer_history: str, ai_generated_content: dict)**
+- Action: Sends personalized email and updates emailSent attribute in database
+- Use when: Ready to send invoice or follow-up emails
+
+**update_invoice_status(invoice_id: str)**
+- Action: Marks invoice as paid in DynamoDB and Zoho
+- Use when: Payment received and status needs updating
+
+**get_customer_id_from_invoice(invoice_id: str)**
+- Returns: Customer ID and basic info from invoice
+- Use when: Have invoice ID but need customer ID
+
+## EMAIL AUTOMATION WORKFLOW:
+
+When processing invoices for automated emails:
+
+1. **Get all sent invoices**: Use list_all_invoices("sent")
+3. **Apply email rules**:
+   - If emailSent = false → Send initial email immediately
+   - If emailSent = true AND overdue → Send follow-up email
+   - If emailSent = true AND not overdue → Skip
+4. **Email personalization**:
+   - Get customer context using get_customer_invoice_history()
+   - Generate appropriate ai_generated_content with:
+     - subject: Personalized subject line
+     - body: Contextual message content
+     - tone: "gentle", "firm", or "urgent" based on situation
+     - personalization_notes: Reasoning for approach
+5. **Send emails**: Use send_personalized_email with generated content
+
+## EMAIL TONE GUIDELINES:
+- **Initial emails**: Professional, welcoming tone
+- **1-7 days overdue**: Gentle reminder, understanding approach
+- **8-21 days overdue**: Firm professional, direct but respectful
+- **22+ days overdue**: Urgent tone, immediate action required
+
+## CUSTOMER RISK ASSESSMENT:
+- **LOW risk (>90% payment rate)**: Gentle, relationship-focused approach
+- **MEDIUM risk (70-90% payment rate)**: Professional, direct communication
+- **HIGH risk (<70% payment rate)**: Firm, consequence-focused messaging
+
+## OPERATIONAL CONSTRAINTS:
+- Always validate data before making updates
+- Provide clear summaries of all actions taken
+- If any operation fails, skip that item and continue with others
+- Use customer payment history to personalize email approach
+
+## RESPONSE FORMAT:
+For automation tasks, always provide:
+- Summary of invoices processed
+- Number of emails sent by type (initial/follow-up)
+- Number of invoices skipped and reasons
+- Any errors encountered
+- Next recommended actions
+
+Execute tasks efficiently while maintaining professional customer relationships and ensuring accurate record keeping.
+"""
+unified_billing_agent = Agent(
+    model=BedrockModel(model_id="us.amazon.nova-lite-v1:0", temperature=0.1),
+    system_prompt=UNIFIED_BILLING_AGENT_PROMPT,
+    tools=[
+        get_invoice_details,
+        list_all_invoices, 
+        get_customer_invoice_history,
+        send_personalized_email,
+        update_invoice_status,
+        get_customer_id_from_invoice
+    ]
+)
+
 # Test scenarios
 if __name__ == "__main__":
     print("Testing Billing Agent with Your Lambda Functions\n")
-    response = coordinator_agent("""
-    Process invoices with status "sent" and send emails based on these rules:
-
+    response = unified_billing_agent("""
+    Process all invoices with status "sent" and send emails based on these rules:
     RULES:
-    - If emailSent = false then Send initial email immediately  
-    - If emailSent = true AND overdue then Send follow-up email
-    - If emailSent = true AND not overdue then Skip (no email)
 
-    WORKFLOW:
-    1. Call list_all_invoices("sent") - this returns all needed info including emailSent status and customer details
-    2. Process ONLY 1 invoices at a time to avoid errors
-    3. For each invoice needing email:
-      - Use customer info already in the invoice data (no need for separate customer ID lookup)
-      - Call send_personalized_email with appropriate tone based on days overdue
-    4. Provide summary with counts
+    If emailSent is false then Send initial email immediately
+    If emailSent is true AND overdue then Send follow-up email
+    If emailSent is true AND not overdue then DO NOT SEND EMAIL
 
-    EMAIL TONES:
-    - Initial email: Professional
-    - 1-7 days overdue: Gentle reminder  
-    - 8-21 days overdue: Firm professional
-    - 22+ days overdue: Urgent
+    ACTIONS:
+    Get all invoices that has the status "sent"
+    For each invoice: check if it has attribute "emailSent" and calculate if overdue
+    Get customer id using the get_customer_id_from_invoice() function and check customer payment history for that invoice using get_customer_invoice_history
+    Send appropriate emails using send_personalized_email
+    Report summary: total processed, emails sent, skipped, errors
 
-    Execute now.
+    NOTE: DO NOT UPDATE INVOICE STATUS, ONLY SEND EMAILS
     """)
     print("Invoice Agent Response:\n", response, "\n")
