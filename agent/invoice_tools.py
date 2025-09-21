@@ -355,3 +355,32 @@ def send_personalized_email(customer_name: str,
             "success": False,
             "error": f"Failed to call API: {str(e)}"
         }
+    
+@tool
+def get_customer_id_from_invoice(invoice_id: str) -> dict:
+    """Get customer ID from an invoice ID"""
+    
+    try:
+        # Use existing get_invoice_details function
+        invoice_result = get_invoice_details(invoice_id)
+        
+        if invoice_result["success"]:
+            return {
+                "success": True,
+                "invoice_id": invoice_id,
+                "customer_id": invoice_result["customer_id"],
+                "customer_name": invoice_result["customer_name"],
+                "customer_email": invoice_result["customer_email"],
+                "company_name": invoice_result["company_name"]
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Invoice {invoice_id} not found"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error getting customer ID: {str(e)}"
+        }

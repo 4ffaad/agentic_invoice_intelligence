@@ -7,13 +7,14 @@ from invoice_tools import (
     get_overdue_invoices,
     update_invoice_status,
     get_customer_invoice_history,
-    send_personalized_email
+    send_personalized_email,
+    get_customer_id_from_invoice
 )
 
 # Create Bedrock model
 bedrock_model = BedrockModel(
     model_id="us.amazon.nova-lite-v1:0",
-    temperature=0.3
+    temperature=0.1
 )
 
 EMAIL_AGENT_PROMPT = """
@@ -65,18 +66,6 @@ EMAIL CONTENT REQUIREMENTS:
 4. Include clear next steps
 5. Maintain professional relationship focus
 
-PERSONALIZATION EXAMPLES:
-
-For reliable customer (5 days overdue):
-- subject: "Friendly reminder: Invoice INV-001 - We value your partnership"
-- body: "Hi [Name], I hope you're doing well. As one of our valued clients with excellent payment history, I wanted to reach out about invoice INV-001. I know how busy things can get, and this may have simply slipped through the cracks..."
-- tone: "gentle"
-
-For problematic customer (25 days overdue):
-- subject: "Urgent: Invoice INV-002 requires immediate attention"
-- body: "Our records show invoice INV-002 for $[amount] is now 25 days overdue. Given the payment history on this account, immediate payment is required to avoid further collection actions..."
-- tone: "urgent"
-
 WORKFLOW:
 When given a task about sending emails:
 1. Analyze the customer context and days overdue
@@ -96,20 +85,35 @@ RESPONSIBILITIES:
 - Calculate risk scores and categorize customers
 - Provide actionable insights for communication strategies
 
+EFFICIENT WORKFLOW:
+1. Use get_invoice_details(invoice_id) to get customer_id directly
+2. Then use get_customer_invoice_history(customer_id) for full analysis
+3. Avoid multiple tool calls for the same information
+
 RISK LEVELS:
 - LOW (>90% payment rate): Gentle, relationship-focused approach
 - MEDIUM (70-90% payment rate): Professional, direct communication  
 - HIGH (<70% payment rate): Firm, consequence-focused messaging
 
-ANALYSIS FORMAT:
-- Risk score (0-100) with justification
-- Payment behavior summary
-- Recommended communication tone
-- Specific next steps
+TOOLS:
 
-Always provide data-driven insights with clear recommendations for customer management.
+get_invoice_details(invoice_id: str)
+Returns: Complete invoice info INCLUDING customer_id and customer details
+Use when: You have invoice_id and need customer_id efficiently
 
-TOOLS: get_customer_invoice_history, list_all_invoices, get_overdue_invoices
+get_customer_invoice_history(customer_id: str)
+Returns: Complete payment history and risk analysis
+Use when: You have customer_id and need payment patterns
+
+list_all_invoices(status_filter: Optional[str])
+Returns: All invoices with summary statistics
+Use when: You need overview of all invoices
+
+get_overdue_invoices()
+Returns: All overdue invoices with customer details
+Use when: You need overdue analysis
+
+IMPORTANT: Use get_invoice_details first to get customer_id, then get_customer_invoice_history. Don't use get_customer_id_from_invoice - it's redundant.
 """
 
 # agents/invoice_agent.py
@@ -135,7 +139,24 @@ OPERATIONS:
 
 Ensure accurate invoice lifecycle management with proper validation and documentation.
 
-TOOLS: get_invoice_details, update_invoice_status, list_all_invoices
+
+AVAILABLE TOOLS: 
+get_invoice_details(invoice_id: str)
+
+Returns: Complete invoice information including customer details, amounts, due dates, and overdue calculations
+Use when: You need full details about a specific invoice
+
+list_all_invoices(status_filter: Optional[str])
+
+Returns: List of all invoices, optionally filtered by status ("sent", "paid")
+Includes: Summary statistics and overdue calculations for each invoice
+Use when: You need to see all invoices or filter by status
+
+update_invoice_status(invoice_id: str)
+
+Action: Marks an invoice as paid in both DynamoDB and Zoho
+Updates: Invoice status from "sent" to "paid"
+Use when: Customer has made payment and you need to update records
 """
 
 COORDINATOR_AGENT_PROMPT = """
@@ -181,7 +202,7 @@ email_agent = Agent(
 analysis_agent = Agent(
     model=create_base_model(),
     system_prompt=ANALYSIS_AGENT_PROMPT,
-    tools=[get_customer_invoice_history, list_all_invoices, get_overdue_invoices]
+    tools=[get_customer_invoice_history, list_all_invoices, get_overdue_invoices, get_customer_id_from_invoice, get_invoice_details]
 )
 
 # Invoice Agent
@@ -243,11 +264,34 @@ def call_invoice_agent(task: str) -> dict:
 coordinator_agent = Agent(
     model=create_base_model(),
     system_prompt=COORDINATOR_AGENT_PROMPT,
-    tools=[call_analysis_agent, call_email_agent, call_invoice_agent]
+    tools=[call_email_agent, call_invoice_agent, call_analysis_agent, ]
 )
 
 # Test scenarios
 if __name__ == "__main__":
     print("Testing Billing Agent with Your Lambda Functions\n")
-    response = invoice_agent("update the status of invoice 7273232000000105054 to 'paid'.")
+    response = coordinator_agent("""
+    Process invoices with status "sent" and send emails based on these rules:
+
+    RULES:
+    - If emailSent = false then Send initial email immediately  
+    - If emailSent = true AND overdue then Send follow-up email
+    - If emailSent = true AND not overdue then Skip (no email)
+
+    WORKFLOW:
+    1. Call list_all_invoices("sent") - this returns all needed info including emailSent status and customer details
+    2. Process ONLY 1 invoices at a time to avoid errors
+    3. For each invoice needing email:
+      - Use customer info already in the invoice data (no need for separate customer ID lookup)
+      - Call send_personalized_email with appropriate tone based on days overdue
+    4. Provide summary with counts
+
+    EMAIL TONES:
+    - Initial email: Professional
+    - 1-7 days overdue: Gentle reminder  
+    - 8-21 days overdue: Firm professional
+    - 22+ days overdue: Urgent
+
+    Execute now.
+    """)
     print("Invoice Agent Response:\n", response, "\n")
