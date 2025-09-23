@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agentic Billing Intelligence (ABI)
 
-## Getting Started
+## Overview
 
-First, run the development server:
+Agentic Billing Intelligence is an AI-powered billing automation system that autonomously manages invoice-to-cash workflows for SaaS businesses. Built for the AWS AI Hackathon 2025, this solution eliminates manual billing processes through intelligent customer communication and automated payment follow-ups.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Problem Statement
+
+SaaS businesses struggle with:
+- Delayed invoicing and inefficient collections impacting cash flow
+- Manual invoice generation and follow-ups
+- Inconsistent customer communication
+- Finance teams spending time on repetitive tasks instead of strategic work
+
+## Solution
+
+Our agentic AI system acts as autonomous billing agents that:
+- Generate and send invoices automatically based on usage/subscription terms
+- Monitor payment status in real-time
+- Engage customers proactively with personalized messages
+- Learn from customer behavior to prioritize follow-ups and adjust strategies
+- Reduce Days Sales Outstanding (DSO) while enhancing customer experience
+
+## Architecture
+
+### AWS Services Used
+- **Amazon Bedrock (Nova Pro/Lite)** - AI agents for natural language processing and decision making
+- **AWS Lambda** - Serverless functions for billing automation
+- **Amazon DynamoDB** - Invoice and customer data storage
+- **Amazon API Gateway** - RESTful API endpoints
+- **Amazon SES** - Email delivery service
+- **Amazon S3** - Invoice PDF storage
+
+### System Components
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Zoho CRM      │────│  Lambda Import  │────│   DynamoDB      │
+│   (Data Source) │    │   Functions     │    │  (Invoice DB)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+┌─────────────────┐    ┌─────────────────┐            │
+│     Gmail       │────│  Amazon SES     │            │
+│  (Email Inbox)  │    │ (Email Service) │            │
+└─────────────────┘    └─────────────────┘            │
+                                │                      │
+                                └──────────────────────┤
+                                                       │
+┌─────────────────────────────────────────────────────┴─────────────────┐
+│                    AI Agent System                                     │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐          │
+│  │ Analysis Agent  │ │  Email Agent    │ │ Invoice Agent   │          │
+│  │ - Risk assess   │ │ - Personalize   │ │ - Status mgmt   │          │
+│  │ - History track │ │ - Send emails   │ │ - Validation    │          │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘          │
+│                             │                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │              Coordinator Agent                                  │  │
+│  │              (Orchestrates workflow)                           │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Intelligent Email Automation
+- **Initial Invoices**: Professional payment notifications for new invoices
+- **Gentle Reminders**: Understanding approach for 1-7 days overdue
+- **Firm Follow-ups**: Professional but direct for 8-21 days overdue  
+- **Urgent Actions**: Immediate attention required for 22+ days overdue
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Customer Risk Assessment
+- **LOW Risk** (>90% payment rate): Gentle, relationship-focused approach
+- **MEDIUM Risk** (70-90% payment rate): Professional, direct communication
+- **HIGH Risk** (<70% payment rate): Firm, consequence-focused messaging
 
-## Learn More
+### Real-time Synchronization
+- Bi-directional sync with Zoho CRM
+- Email tracking and audit trails
+- Payment status updates across all systems
 
-To learn more about Next.js, take a look at the following resources:
+## Contributing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This project was developed for the Great Malaysia AI Hackathon 2025.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Acknowledgments
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- AWS for providing the hackathon platform and Bedrock AI services
+- Strands AI framework for agent orchestration capabilities
